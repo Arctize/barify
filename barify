@@ -19,6 +19,9 @@ usage="Usage: $(basename "$0") MODE ACTION
 Modify volume or brightness and indicate level as
 a bar via notifications (either dunst or mako).
 
+Example:
+   barify vol up
+
 Arguments:
    MODE:
       Volume:     volume|vol|v
