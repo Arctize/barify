@@ -114,8 +114,11 @@ function send_notification {
 	# If mako is running we dismiss the previous notification and use
 	# notify-send, since mako will draw a progress bar by itself
 	if pgrep mako &>/dev/null ; then
+		# For now we dismiss the previous notification to
+		# "replace" the bar. This should be improve once
+		# functionality like the one proposed in
+		# https://github.com/emersion/mako/pull/270 is merged.
 		makoctl dismiss
-		echo a
 		if is_mute ; then
 			notify-send " Muted" -h int:value:$1 -t 5000
 		else
@@ -125,8 +128,9 @@ function send_notification {
 	fi
 
 	# On dunst, the bar is printed with a fixed width and a padding
-	# character ("░") so it can be used in a dynamically sized dunst frame and
-	# is therefore at least somewhat portable between hidpi and normal screens.
+	# character ("░") so it can be used in a dynamically sized dunst frame
+	# and is therefore at least somewhat portable between hidpi and
+	# normal screens.
 	if pgrep dunst &>/dev/null ; then
 		if is_mute ; then
 			dunstify -i NUL -r 2593 -u normal "  Muted"
