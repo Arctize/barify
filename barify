@@ -36,7 +36,7 @@ ACTION=-1 # 1 = inc, 2 = down, 3 = mute
 ICON=
 
 case $1 in
-	volume|vol|v)
+	v*)
 		MODE=1
 		ICON=
 		case $2 in
@@ -54,7 +54,7 @@ case $1 in
 				exit 1
 		esac
 		;;
-	brightness|bright|br)
+	b*)
 		MODE=2
 		ICON=
 		case $2 in
