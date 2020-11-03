@@ -119,7 +119,7 @@ function send_notification {
 		# functionality like the one proposed in
 		# https://github.com/emersion/mako/pull/270 is merged.
 		makoctl dismiss
-		if is_mute ; then
+		if [ $MODE == 1 ] && is_mute ; then
 			notify-send " Muted" -h int:value:$1 -t 5000
 		else
 			notify-send "$ICON $1%" -h int:value:$1 -t 5000
@@ -132,7 +132,7 @@ function send_notification {
 	# and is therefore at least somewhat portable between hidpi and
 	# normal screens.
 	if pgrep dunst &>/dev/null ; then
-		if is_mute ; then
+		if [ $MODE == 1 ] && is_mute ; then
 			dunstify -i NUL -r 2593 -u normal "  Muted"
 		else
 			length=25 # Number characters for the bar
