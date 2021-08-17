@@ -98,7 +98,11 @@ function is_mute {
 }
 
 function get_brightness {
-	xbacklight -get | cut -d '.' -f 1
+	if type xbacklight &> /dev/null; then
+		xbacklight -get | cut -d '.' -f 1
+	elif type brightnessctl &> /dev/null; then
+		brightnessctl -m | cut -d ',' -f 4 | tr -d '%'
+	fi
 }
 
 # Function to repeat a character
@@ -175,11 +179,19 @@ elif [ $MODE -eq 2 ] # Brightness
 then
 	case $ACTION in
 		1)
-			xbacklight +8
+			if type xbacklight &> /dev/null; then
+				xbacklight +8
+			elif type brightnessctl &> /dev/null; then
+				brightnessctl -q set 8%+
+			fi
 			send_notification `get_brightness`
 			;;
 		2)
-			xbacklight -8
+			if type xbacklight &> /dev/null; then
+				xbacklight -8
+			elif type brightnessctl &> /dev/null; then
+				brightnessctl -q set 8%-
+			fi
 			send_notification `get_brightness`
 			;;
 	esac
