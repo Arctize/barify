@@ -118,15 +118,13 @@ function send_notification {
 	# If mako is running we dismiss the previous notification and use
 	# notify-send, since mako will draw a progress bar by itself
 	if pgrep mako &>/dev/null ; then
-		# For now we dismiss the previous notification to
-		# "replace" the bar. This should be improve once
-		# functionality like the one proposed in
-		# https://github.com/emersion/mako/pull/270 is merged.
-		makoctl dismiss
+		# We replace the existing notification using the synchronous hint merged in
+		# https://github.com/emersion/mako/pull/270 (Mako version 1.6)
+		# Previously, we worked around this by calling `makoctl dismiss` here.
 		if [ $MODE == 1 ] && is_mute ; then
-			notify-send " Muted" -h int:value:$1 -t 5000
+			notify-send " Muted" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
 		else
-			notify-send "$ICON $1%" -h int:value:$1 -t 5000
+			notify-send "$ICON $1%" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
 		fi
 		return
 	fi
