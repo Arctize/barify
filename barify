@@ -115,20 +115,6 @@ function repChar {
 }
 
 function send_notification {
-	# If mako is running we dismiss the previous notification and use
-	# notify-send, since mako will draw a progress bar by itself
-	if pgrep mako &>/dev/null ; then
-		# We replace the existing notification using the synchronous hint merged in
-		# https://github.com/emersion/mako/pull/270 (Mako version 1.6)
-		# Previously, we worked around this by calling `makoctl dismiss` here.
-		if [ $MODE == 1 ] && is_mute ; then
-			notify-send " Muted" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
-		else
-			notify-send "$ICON $1%" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
-		fi
-		return
-	fi
-
 	# On dunst, the bar is printed with a fixed width and a padding
 	# character ("░") so it can be used in a dynamically sized dunst frame
 	# and is therefore at least somewhat portable between hidpi and
@@ -148,6 +134,18 @@ function send_notification {
 		fi
 		return
 	fi
+
+	# If mako is running we dismiss the previous notification and use
+	# notify-send, since mako will draw a progress bar by itself
+	# We replace the existing notification using the synchronous hint merged in
+	# https://github.com/emersion/mako/pull/270 (Mako version 1.6)
+	# Previously, we worked around this by calling `makoctl dismiss` here.
+	if [ $MODE == 1 ] && is_mute ; then
+		notify-send " Muted" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
+	else
+		notify-send "$ICON $1%" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
+	fi
+	return
 
 	echo 'Warning: Neither dunst nor mako was found to be running.' 1>&2
 }
