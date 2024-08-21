@@ -1,17 +1,38 @@
 # barify
-Modify volume or brightness and display result as a bar via notifications (either dunst or mako).
 
-### Installation
-* Just throw the script somewhere and make sure it's in your $PATH.
+Adjust volume/brightness and display a bar using either dunst or mako.
+
+## Example
+
+Example using mako:
+
+![image](img/example.png)
+
+Using the following mako config (`~/config/mako/config`)
+
+``` ini
+layer=overlay
+anchor=top-center
+default-timeout=8000
+border-size=2
+background-color=#454545
+progress-color=source #3b4d7e
+border-color=#3b4d7e
+border-radius=25
+```
+
+## Installation
+
+* Place the script somewhere in your
+  [PATH]((https://www.baeldung.com/linux/path-variable)) and make sure it's
+  executable
 * There's also an [AUR package](https://aur.archlinux.org/packages/barify).
 
-Barify automatically uses either [mako](https://github.com/emersion/mako) or [dunst](https://github.com/dunst-project/dunst),
-depending on which one it detects as running.
+Barify automatically uses either [mako](https://github.com/emersion/mako) or
+[dunst](https://github.com/dunst-project/dunst), depending on which one it
+detects.
 
-On mako, for now, barify simply kills existing notifications and places a new one, which is admittedly ugly.
-This will be fixed as soon as mako supports replacing notifications by their IDs (e.g. https://github.com/emersion/mako/pull/270).
-
-### Usage
+## Usage
 
     Usage: barify MODE ACTION
     Modify volume or brightness and indicate level as
