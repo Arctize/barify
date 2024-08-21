@@ -31,61 +31,73 @@ Arguments:
       Decrease:   down|dec|d
       Mute:       mute|m"
 
-MODE=-1   # 1 = volume, 2 = brightness
-ACTION=-1 # 1 = inc, 2 = down, 3 = mute
-ICON=
+MODE_VOLUME=1
+MODE_BRIGHTNESS=2
+ACTION_INCREASE=1
+ACTION_DECREASE=2
+ACTION_MUTE=3
+ICON_VOLUME=
+ICON_BRIGHTNESS=
+ICON_MUTE=
+
+mode=
+action=
+icon=
 
 case $1 in
-	v*)
-		MODE=1
-		ICON=
-		case $2 in
-			up|u|inc|i)
-				ACTION=1
-				;;
-			down|dec|d)
-				ACTION=2
-				;;
-			mute|m)
-				ACTION=3
-				;;
-			*)
-				echo "$usage"
-				exit 1
-		esac
+v*)
+	mode=$MODE_VOLUME
+	icon=$ICON_VOLUME
+	case $2 in
+	up | u | inc | i)
+		action=$ACTION_INCREASE
 		;;
-	b*)
-		MODE=2
-		ICON=
-		case $2 in
-			up|u|inc|i)
-				ACTION=1
-				;;
-			down|dec|d)
-				ACTION=2
-				;;
-			*)
-				echo "$usage"
-				exit 1
-		esac
+	down | dec | d)
+		action=$ACTION_DECREASE
+		;;
+	mute | m)
+		action=$ACTION_MUTE
 		;;
 	*)
 		echo "$usage"
 		exit 1
+		;;
+	esac
+	;;
+b*)
+	mode=$MODE_BRIGHTNESS
+	icon=$ICON_BRIGHTNESS
+	case $2 in
+	up | u | inc | i)
+		action=$ACTION_INCREASE
+		;;
+	down | dec | d)
+		action=$ACTION_DECREASE
+		;;
+	*)
+		echo "$usage"
+		exit 1
+		;;
+	esac
+	;;
+*)
+	echo "$usage"
+	exit 1
+	;;
 esac
 
 # Lock to assert only a single instance is running.
 # xbacklight for example can take quite a while to execute,
 # which can lead to the bar going back and forth if multiple instances
 # are running simultanously.
-LOCKFILE="/tmp/.`basename $0`.lock"
+LOCKFILE="/tmp/.$(basename "$0").lock"
 TIMEOUT=0.1
-touch $LOCKFILE
-exec {FD}<>$LOCKFILE
+touch "$LOCKFILE"
+exec {FD}<>"$LOCKFILE"
 
 if ! flock -x -w $TIMEOUT $FD; then
 	echo "Failed to obtain a lock within $TIMEOUT seconds"
-	echo "Another instance of `basename $0` is probably running."
+	echo "Another instance of $(basename "$0") is probably running."
 	exit 1
 fi
 
@@ -98,9 +110,9 @@ function is_mute {
 }
 
 function get_brightness {
-	if type xbacklight &> /dev/null; then
+	if type xbacklight &>/dev/null; then
 		xbacklight -get | cut -d '.' -f 1
-	elif type brightnessctl &> /dev/null; then
+	elif type brightnessctl &>/dev/null; then
 		brightnessctl -m | cut -d ',' -f 4 | tr -d '%'
 	fi
 }
@@ -108,9 +120,9 @@ function get_brightness {
 # Function to repeat a character
 # arg $1: number of repetitions
 # arg $2: char to be printed
-function repChar {
-	for (( i = 0; i < $1; i++ )); do
-		printf "$2"
+function rep_char {
+	for ((i = 0; i < $1; i++)); do
+		printf "%s" "$2"
 	done
 }
 
@@ -119,18 +131,18 @@ function send_notification {
 	# character ("░") so it can be used in a dynamically sized dunst frame
 	# and is therefore at least somewhat portable between hidpi and
 	# normal screens.
-	if pgrep dunst &>/dev/null ; then
-		if [ $MODE == 1 ] && is_mute ; then
-			dunstify -i NUL -r 2593 -u normal "  Muted"
+	if pgrep dunst &>/dev/null; then
+		if [ $mode == $MODE_VOLUME ] && is_mute; then
+			dunstify -i NUL -r 2593 -u normal "$ICON_MUTE  Muted"
 		else
 			length=25 # Number characters for the bar
-			div=$((100 / $length))
-			total=$((100 / $div))
-			left=$(($1 / $div))
-			right=$(($total - $left))
-			bar=$(repChar $left "█")$(repChar $right "░")
+			div=$((100 / length))
+			total=$((100 / div))
+			left=$(($1 / div))
+			right=$((total - left))
+			bar=$(rep_char $left "█")$(rep_char $right "░")
 
-			dunstify -i NUL -r 2593 -u normal "$ICON $bar"
+			dunstify -i NUL -r 2593 -u normal "$icon $bar"
 		fi
 		return
 	fi
@@ -141,10 +153,10 @@ function send_notification {
 		# We replace the existing notification using the synchronous hint merged in
 		# https://github.com/emersion/mako/pull/270 (Mako version 1.6)
 		# Previously, we worked around this by calling `makoctl dismiss` here.
-		if [ $MODE == 1 ] && is_mute; then
-			notify-send " Muted" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
+		if [ $mode == $MODE_VOLUME ] && is_mute; then
+			notify-send "$ICON_MUTE Muted" -h int:value:"$1" -t 5000 -h string:x-canonical-private-synchronous:barify-$mode
 		else
-			notify-send "$ICON $1%" -h int:value:$1 -t 5000 -h string:x-canonical-private-synchronous:barify-$MODE
+			notify-send "$icon $1%" -h int:value:"$1" -t 5000 -h string:x-canonical-private-synchronous:barify-$mode
 		fi
 		return
 	fi
@@ -152,46 +164,43 @@ function send_notification {
 	echo 'Warning: Neither dunst nor mako was found.' 1>&2
 }
 
-if [ $MODE -eq 1 ] # Volume
-then
-	case $ACTION in
-		1)
-			# Set the volume on (if it was muted)
-			amixer -D pulse set Master on > /dev/null
-			# Up the volume (+ 5%)
-			amixer -D pulse sset Master 4%+ > /dev/null
-			send_notification `get_volume`
-			;;
-		2)
-			amixer -D pulse set Master on > /dev/null
-			amixer -D pulse sset Master 4%- > /dev/null
-			send_notification `get_volume`
-			;;
-		3)
-			# Toggle mute
-			amixer -D pulse set Master 1+ toggle > /dev/null
-			send_notification `get_volume`
-			;;
+if [ $mode == $MODE_VOLUME ]; then
+	case $action in
+	"$ACTION_INCREASE")
+		# Set the volume on (if it was muted)
+		amixer -D pulse set Master on >/dev/null
+		# Up the volume (+ 5%)
+		amixer -D pulse sset Master 4%+ >/dev/null
+		send_notification "$(get_volume)"
+		;;
+	"$ACTION_DECREASE")
+		amixer -D pulse set Master on >/dev/null
+		amixer -D pulse sset Master 4%- >/dev/null
+		send_notification "$(get_volume)"
+		;;
+	"$ACTION_MUTE")
+		# Toggle mute
+		amixer -D pulse set Master 1+ toggle >/dev/null
+		send_notification "$(get_volume)"
+		;;
 	esac
-elif [ $MODE -eq 2 ] # Brightness
-then
-	case $ACTION in
-		1)
-			if type xbacklight &> /dev/null; then
-				xbacklight +8
-			elif type brightnessctl &> /dev/null; then
-				brightnessctl -q set 8%+
-			fi
-			send_notification `get_brightness`
-			;;
-		2)
-			if type xbacklight &> /dev/null; then
-				xbacklight -8
-			elif type brightnessctl &> /dev/null; then
-				brightnessctl -q set 8%-
-			fi
-			send_notification `get_brightness`
-			;;
+elif [ $mode == $MODE_BRIGHTNESS ]; then
+	case $action in
+	"$ACTION_INCREASE")
+		if type xbacklight &>/dev/null; then
+			xbacklight +8
+		elif type brightnessctl &>/dev/null; then
+			brightnessctl -q set 8%+
+		fi
+		send_notification "$(get_brightness)"
+		;;
+	"$ACTION_DECREASE")
+		if type xbacklight &>/dev/null; then
+			xbacklight -8
+		elif type brightnessctl &>/dev/null; then
+			brightnessctl -q set 8%-
+		fi
+		send_notification "$(get_brightness)"
+		;;
 	esac
 fi
-
