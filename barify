@@ -173,7 +173,7 @@ if [ $mode == $MODE_VOLUME ]; then
 	"$ACTION_INCREASE")
 		# Unmute when changing volume
 		wpctl set-mute @DEFAULT_AUDIO_SINK@ 0
-		wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+
+		wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 0.05+
 		send_notification "$(get_volume)"
 		;;
 	"$ACTION_DECREASE")
